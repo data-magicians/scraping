@@ -24,9 +24,11 @@ html
 # Simple methods 
 
 # String methods
+# fix html for human eyes
 html = html.decode('utf-8')
 print(html)
 
+# tags for quote
 start_tag = '<span class="text" itemprop="text">'
 end_tag = '”</span>'
 
@@ -35,6 +37,7 @@ quote_start_index
 quote_end_index = html.find(end_tag) -1
 quote_end_index
 
+# find quote
 quote = html[quote_start_index:quote_end_index]
 quote
 
@@ -46,6 +49,7 @@ re.findall(r"Movie", exmple_str)
 exmple_str2="The winners are: winner1, winner2, winner3"
 re.findall(r"winner\d", exmple_str2)
 
+# find links example
 regex = r"http\S+"
 re.findall(regex,html)
 
@@ -79,6 +83,8 @@ type(image)
 image.name
 image['alt']
 
+# fix html for human eyes
+fixed_html = html_soup.prettify()
 html_soup.find_all("img",src = "media/cache/2c/da/2cdad67c44b002e7ead0cc35693c0e8b.jpg")
 html_soup.find_all("a",href = "catalogue/category/books_1/index.html")
 
@@ -87,11 +93,66 @@ type(containers)
 containers[0].find_all("a")
 
 # Scrapy
-# from scrapy import Selector
-# sel = Selector(text=html)
+from scrapy import Selector
+import requests
+url = 'http://books.toscrape.com/'
+html = requests.get(url).content
 
-# save to csv
-filename = "web_scraping_result.csv"
-f = open(filename,"W")
-headers = "header1, header2, header3\n"
-f.write(headers)
+# SELECTOR
+sel = Selector(text=html)
+type(sel)
+
+images_sel = sel.css('img')
+type(images_sel)
+images_sel[0].extract()
+
+# spider
+import scrapy
+from scrapy.crawler import CrawlerProcess
+url = 'http://books.toscrape.com/'
+
+
+# The actual spider that tells which websites to scrape and how
+class MySpider(scrapy.Spider):
+    
+    name = "spider_name"
+    
+    # Which site or sites we want to scrape and where to send the info from the site to be parsed 
+    def start_requests(self):
+        urls = [url]
+        for i in urls:
+            yield scrapy.Request(url = url, callback = self.parse)
+    
+    # Which data from the html to parse and how
+    def parse(self, response):
+        
+        images = response.css('img').extract()
+        
+        # save to file
+        html_file = "images_file.csv"
+        with open(html_file, 'w') as f:
+            f.writelines([image +'\n' for image in images])
+            f.close()
+        
+        # if we wanted to parse the next links 
+        # in the css command we give the css notation of a link
+        # links = response.css('').extract()
+        # for link in likns:
+            # yield response.follow(url = link, callback = self.parse2)
+    # def parse2(self, response):
+        # parse next links
+
+# initiate a CrwlerProcess
+process = CrawlerProcess()
+
+# tells the process which spider to use
+process.crawl(MySpider)
+
+# start the crawling process
+process.start()
+
+
+
+
+
+
